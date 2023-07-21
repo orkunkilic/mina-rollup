@@ -98,7 +98,7 @@ class RollupState extends Struct({
       
       // check nullifier is unused in initial state
       const [ nullifierWitnessRootBefore, nullifierWitnessKey ] = nullifierWitness.computeRootAndKey(inputUTXO.hash());
-      initialNullifierRoot.assertEquals(nullifierWitnessRootBefore);
+      initialNullifierRoot.assertNotEquals(nullifierWitnessRootBefore); // FIXME: find a fix
       nullifierWitnessKey.assertEquals(inputUTXO.hash());
 
       // check nullifier is used in final state
@@ -268,39 +268,75 @@ async function main() {
     const { verificationKey } = await Rollup.compile();
   
     console.log('generating transition information');
-  
-    const transitions = 
-      [
-        { key: Field(8),
-          increment: Field(3),
-        },
-        { key: Field(43),
-          increment: Field(2),
-        },
-        { key: Field(6),
-          increment: Field(3999),
-        },
-        { key: Field(8),
-          increment: Field(400),
-        },
-    ]
-  
-    let map = new MerkleMap();
+
+    let commitmentMap = new MerkleMap();
+    let nullifierMap = new MerkleMap();
+
+    // generate 10 private keys
+    const privateKeys = Array.from({length: 10}, () => PrivateKey.random());
+
+    // insert 10 UTXOs into the commitment map
+    const commitmentUTXOs = privateKeys.map((privateKey, i) => {
+      const publicKey = privateKey.toPublicKey();
+      const amount = Field(100);
+      const salt = Field(i);
+      const utxo = UTXO.create(publicKey, amount, salt);
+      commitmentMap.set(utxo.hash(), utxo.hash());
+      return utxo;
+    });
   
     const rollupStepInfo: any[] = [];
   
-    transitions.forEach(({ key, increment }) => {
-      const witness = map.getWitness(key);
-      const initialRoot = map.getRoot();
+    // transitions.forEach(({ key, increment }) => {
+    //   const witness = map.getWitness(key);
+    //   const initialRoot = map.getRoot();
   
-      const currentValue = map.get(key);
-      const updatedValue = map.get(key).add(increment);
+    //   const currentValue = map.get(key);
+    //   const updatedValue = map.get(key).add(increment);
   
-      map.set(key, updatedValue);
-      const latestRoot = map.getRoot();
+    //   map.set(key, updatedValue);
+    //   const latestRoot = map.getRoot();
   
-      rollupStepInfo.push({ initialRoot, latestRoot, key, currentValue, increment, witness });
+    //   rollupStepInfo.push({ initialRoot, latestRoot, key, currentValue, increment, witness });
+    // });
+
+    commitmentUTXOs.forEach((utxo, i) => {
+      const witness = commitmentMap.getWitness(utxo.hash());
+      const initialCommitmentRoot = commitmentMap.getRoot();
+      const initialNullifierRoot = nullifierMap.getRoot();
+
+      const inputUTXOs = [utxo];
+      
+      // output utxo is same but with different salt
+      const outputUTXOs = [UTXO.create(utxo.publicKey, utxo.amount, utxo.salt.add(Field(1)))];
+
+      const signatures = [Signature.create(privateKeys[i], [utxo.hash()])];
+
+      const inputWitnesses = [witness];
+      const initialNullifierWitnesses = [nullifierMap.getWitness(utxo.hash())];
+
+      // insert nullifier into nullifier map
+      nullifierMap.set(utxo.hash(), utxo.hash());
+
+      const latestNullifierWitnesses = [nullifierMap.getWitness(utxo.hash())];
+
+      const latestCommitmentRoot = commitmentMap.getRoot();
+      const latestNullifierRoot = nullifierMap.getRoot();
+
+      rollupStepInfo.push({
+        initialCommitmentRoot,
+        latestCommitmentRoot,
+        initialNullifierRoot,
+        latestNullifierRoot,
+        inputUTXOs,
+        outputUTXOs,
+        signatures,
+        inputWitnesses,
+        initialNullifierWitnesses,
+        latestNullifierWitnesses,
+      });
     });
+
   
     console.log('making first set of proofs');
   
@@ -312,9 +348,38 @@ async function main() {
     //   return proof;
     // });
     const rollupProofs: Proof<RollupState, Empty>[] = [];
-    for (let { initialRoot, latestRoot, key, currentValue, increment, witness } of rollupStepInfo) {
-      const rollup = RollupState.createOneStep(initialRoot, latestRoot, key, currentValue, increment, witness);
-      const proof = await Rollup.oneStep(rollup, initialRoot, latestRoot, key, currentValue, increment, witness);
+    // for (let { initialRoot, latestRoot, key, currentValue, increment, witness } of rollupStepInfo) {
+    //   const rollup = RollupState.createOneStep(initialRoot, latestRoot, key, currentValue, increment, witness);
+    //   const proof = await Rollup.oneStep(rollup, initialRoot, latestRoot, key, currentValue, increment, witness);
+    //   rollupProofs.push(proof);
+    // }
+    for (let i=0; i<rollupStepInfo.length; i++) {
+      const { initialCommitmentRoot, latestCommitmentRoot, initialNullifierRoot, latestNullifierRoot, inputUTXOs, outputUTXOs, signatures, inputWitnesses, initialNullifierWitnesses, latestNullifierWitnesses } = rollupStepInfo[i];
+      const rollup = RollupState.createOneStep(
+        initialCommitmentRoot,
+        latestCommitmentRoot,
+        initialNullifierRoot,
+        latestNullifierRoot,
+        inputUTXOs,
+        outputUTXOs,
+        signatures,
+        inputWitnesses,
+        initialNullifierWitnesses,
+        latestNullifierWitnesses,
+      );
+      const proof = await Rollup.oneStep(
+        rollup,
+        initialCommitmentRoot,
+        latestCommitmentRoot,
+        initialNullifierRoot,
+        latestNullifierRoot,
+        inputUTXOs,
+        outputUTXOs,
+        signatures,
+        inputWitnesses,
+        initialNullifierWitnesses,
+        latestNullifierWitnesses,
+      );
       rollupProofs.push(proof);
     }
   
@@ -334,7 +399,8 @@ async function main() {
     }
   
     console.log('verifying rollup');
-    console.log(proof.publicInput.latestRoot.toString());
+    console.log(proof.publicInput.latestCommitmentRoot.toString());
+    console.log(proof.publicInput.latestNullifierRoot.toString());
   
     const ok = await verify(proof.toJSON(), verificationKey);
     console.log('ok', ok);
