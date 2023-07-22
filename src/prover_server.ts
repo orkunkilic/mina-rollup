@@ -46,16 +46,13 @@ server.post(
     reply: FastifyReply
   ) => {
     const transactions = request.body;
-    console.log('TXS', transactions, typeof transactions);
-    // hashData(body);
-    // console.log(reqBody);
-    // const transactions = JSON.parse(transactions);
-    // iterate over each transaction, convert them to snarkyjs -> Transaction[]
+
+    // INSTEAD: Push transactions to queue as job
+    // From here: Move to worker
     const convertedTransaction: Transaction[] = transactions.map((tx: any) => {
-      console.log(JSON.stringify(tx));
       const input_utxos: UTXO[] = tx.input_utxos.map((utxo: any) =>
         UTXO.create(
-          PublicKey.fromBase58(utxo.publicKey),
+          PublicKey.fromBase58(utxo.public_key),
           Field(utxo.amount),
           Field(utxo.salt)
         )
@@ -63,7 +60,7 @@ server.post(
       console.log('!!!!!!!!!!!', input_utxos);
       const output_utxos: UTXO[] = tx.output_utxos.map((utxo: any) =>
         UTXO.create(
-          PublicKey.fromBase58(utxo.publicKey),
+          PublicKey.fromBase58(utxo.public_key),
           Field(utxo.amount),
           Field(utxo.salt)
         )
@@ -77,22 +74,32 @@ server.post(
       return { inputUTXOs: input_utxos, outputUTXOs: output_utxos, signatures };
     });
 
+    const utxo = UTXO.create(
+      PublicKey.fromBase58(
+        'B62qmKjaQZTZa2yyDPt3tizyMRx4TySoNPagK1qcCQCMAWpHLi2TXrF'
+      ),
+      Field(1),
+      Field(1)
+    );
+    const map = new MerkleMap();
+    map.set(utxo.hash(), utxo.hash());
+
     let theBigObjects = createStepInfos(
-      new MerkleMap(),
+      map,
       new MerkleMap(),
       convertedTransaction
     );
-    console.log(generateProofsParellel(theBigObjects));
+    const proofs = await generateProofsParellel(theBigObjects);
 
-    // createStepInfos() ->
-    // generateProofsParallel() ->
-    // mergeProofs() ->
+    // TODO: mergeProofs() ->
+
+    // Until here: Move to worker
     return reply.code(200).send({ success: true });
   }
 );
 
-server.listen({ port: 3030 }, (err, address) => {
-  compile();
+server.listen({ port: 3030 }, async (err, address) => {
+  await compile();
   if (err) {
     console.error(err);
     process.exit(1);

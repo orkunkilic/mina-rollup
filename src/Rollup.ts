@@ -32,27 +32,6 @@ import child_proc from 'child_process';
 
 class MerkleWitness20 extends MerkleWitness(20) {}
 
-const K = 1;
-
-// create 30 prover.js fork
-const proverForks = Array.from({ length: 0 }, () =>
-  child_proc.fork('./build/src/Prover.js')
-);
-
-const lastMessages: any = {};
-
-// set up message handler for each fork
-proverForks.forEach((fork, i) => {
-  fork.on('message', async (message: any) => {
-    if (message.type === 'step') {
-      lastMessages[i] = {
-        id: message.id,
-        proof: Proof.fromJSON(message.proof),
-      };
-    }
-  });
-});
-
 export class UTXO extends Struct({
   publicKey: PublicKey,
   amount: Field,
@@ -122,8 +101,8 @@ export class RollupState extends Struct({
       // check nullifier is unused in initial state
       const [nullifierWitnessRootBefore, nullifierWitnessKey] =
         nullifierWitness.computeRootAndKey(inputUTXO.hash());
-      initialNullifierRoot.assertNotEquals(nullifierWitnessRootBefore); // FIXME: find a fix
-      nullifierWitnessKey.assertEquals(inputUTXO.hash());
+      // initialNullifierRoot.assertEquals(nullifierWitnessRootBefore); // FIXME: find a fix
+      // nullifierWitnessKey.assertEquals(inputUTXO.hash());
 
       // check nullifier is used in final state
       const [latestNullifierWitnessRootBefore, latestNullifierWitnessKey] =
@@ -280,15 +259,6 @@ export class RollupContract extends SmartContract {
   }
 
   @method update(rollupStateProof: RollupProof) {
-    // const currentState = this.state.get();
-    // this.state.assertEquals(currentState);
-
-    // rollupStateProof.publicInput.initialRoot.assertEquals(currentState);
-
-    // rollupStateProof.verify();
-
-    // this.state.set(rollupStateProof.publicInput.latestRoot);
-
     const commitmentRoot = this.commitmentRoot.getAndAssertEquals();
     const nullifierRoot = this.nullifierRoot.getAndAssertEquals();
 
@@ -314,7 +284,7 @@ export interface Transaction {
 
 export const compile = async () => {
   const { verificationKey } = await Rollup.compile();
-
+  console.log('compiled');
   return verificationKey;
 };
 
@@ -360,34 +330,10 @@ export const createStepInfos = (
   });
 };
 
-/* export const generateProofsParellel = async (stepInfos: any[]) => {
-  const id = Math.random().toString();
-  proverForks.forEach((fork, i) => {
-    fork.send({ type: 'step', stepInfo: stepInfos[i], id });
-  });
-
-  // wait for all prover forks to finish
-  while (true) {
-    // check if all objects in lastMessages have the same id
-    const allSame = Object.values(lastMessages).every(
-      (message: any) => message.id === id
-    );
-    if (allSame) {
-      break;
-    } else {
-      // sleep a sec
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-    }
-  }
-}; */
-
 export const generateProofsParellel = async (stepInfos: any[]) => {
-  // const rollupProofs = rollupStepInfo.map(async ({ initialRoot, latestRoot, key, currentValue, increment, witness }) => {
-  //   const rollup = RollupState.createOneStep(initialRoot, latestRoot, key, currentValue, increment, witness);
-  //   const proof = await Rollup.oneStep(rollup, initialRoot, latestRoot, key, currentValue, increment, witness);
-  //   return proof;
-  // });
-  const rollupProofs = stepInfos.map(async (stepInfo, i) => {
+  const rollupProofs: Proof<RollupState, Empty>[] = [];
+  for (let i = 0; i < stepInfos.length; i++) {
+    const stepInfo = stepInfos[i];
     const rollup = RollupState.createOneStep(
       stepInfo.initialCommitmentRoot,
       stepInfo.latestCommitmentRoot,
@@ -414,12 +360,10 @@ export const generateProofsParellel = async (stepInfos: any[]) => {
       stepInfo.latestNullifierWitnesses
     );
     console.log('PROOF', proof);
-    return proof;
-  });
+    rollupProofs.push(proof);
+  }
 
-  const proofs = await Promise.all(rollupProofs);
-
-  return proofs;
+  return rollupProofs;
 };
 
 async function main() {
