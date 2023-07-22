@@ -35,7 +35,7 @@ class MerkleWitness20 extends MerkleWitness(20) {}
 const K = 1;
 
 // create 30 prover.js fork
-const proverForks = Array.from({ length: 2 }, () =>
+const proverForks = Array.from({ length: 0 }, () =>
   child_proc.fork('./build/src/Prover.js')
 );
 
@@ -360,7 +360,7 @@ export const createStepInfos = (
   });
 };
 
-export const generateProofsParellel = async (stepInfos: any[]) => {
+/* export const generateProofsParellel = async (stepInfos: any[]) => {
   const id = Math.random().toString();
   proverForks.forEach((fork, i) => {
     fork.send({ type: 'step', stepInfo: stepInfos[i], id });
@@ -379,6 +379,47 @@ export const generateProofsParellel = async (stepInfos: any[]) => {
       await new Promise((resolve) => setTimeout(resolve, 1000));
     }
   }
+}; */
+
+export const generateProofsParellel = async (stepInfos: any[]) => {
+  // const rollupProofs = rollupStepInfo.map(async ({ initialRoot, latestRoot, key, currentValue, increment, witness }) => {
+  //   const rollup = RollupState.createOneStep(initialRoot, latestRoot, key, currentValue, increment, witness);
+  //   const proof = await Rollup.oneStep(rollup, initialRoot, latestRoot, key, currentValue, increment, witness);
+  //   return proof;
+  // });
+  const rollupProofs = stepInfos.map(async (stepInfo, i) => {
+    const rollup = RollupState.createOneStep(
+      stepInfo.initialCommitmentRoot,
+      stepInfo.latestCommitmentRoot,
+      stepInfo.initialNullifierRoot,
+      stepInfo.latestNullifierRoot,
+      stepInfo.inputUTXOs,
+      stepInfo.outputUTXOs,
+      stepInfo.signatures,
+      stepInfo.inputWitnesses,
+      stepInfo.initialNullifierWitnesses,
+      stepInfo.latestNullifierWitnesses
+    );
+    const proof = await Rollup.oneStep(
+      rollup,
+      stepInfo.initialCommitmentRoot,
+      stepInfo.latestCommitmentRoot,
+      stepInfo.initialNullifierRoot,
+      stepInfo.latestNullifierRoot,
+      stepInfo.inputUTXOs,
+      stepInfo.outputUTXOs,
+      stepInfo.signatures,
+      stepInfo.inputWitnesses,
+      stepInfo.initialNullifierWitnesses,
+      stepInfo.latestNullifierWitnesses
+    );
+    console.log('PROOF', proof);
+    return proof;
+  });
+
+  const proofs = await Promise.all(rollupProofs);
+
+  return proofs;
 };
 
 async function main() {
