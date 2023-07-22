@@ -27,6 +27,7 @@ import {
   PublicKey,
   Signature,
   Provable,
+  fetchAccount,
 } from 'snarkyjs';
 import child_proc from 'child_process';
 
@@ -247,10 +248,12 @@ export class RollupContract extends SmartContract {
 
   deploy(args: DeployArgs) {
     super.deploy(args);
-    // this.setPermissions({
-    //   ...Permissions.default(),
-    //   editState: Permissions.proofOrSignature(),
-    // });
+    this.account.permissions.set({
+      ...Permissions.default(),
+      editState: Permissions.proofOrSignature(),
+    });
+    this.commitmentRoot.set(Field("13025293539811535620196147717161170858117988565510092981709432406338931357935"));
+    this.nullifierRoot.set(Field("22731122946631793544306773678309960639073656601863129978322145324846701682624"));
   }
 
   @method initStateRoot(commitmentRoot: Field, nullifierRoot: Field) {
@@ -284,7 +287,72 @@ export interface Transaction {
 
 export const compile = async () => {
   const { verificationKey } = await Rollup.compile();
-  console.log('compiled');
+  const { verificationKey: contractKey } = await RollupContract.compile();
+
+  /* let Berkeley = Mina.Network('https://proxy.berkeley.minaexplorer.com/graphql');
+  Mina.setActiveInstance(Berkeley);
+
+  // to use this test, change this private key to an account which has enough MINA to pay fees
+  let feePayerKey = PrivateKey.fromBase58(
+    'EKDzfV1F4KGgrVdqUujb5XAxakZnE9Ypo1UfxU8GjVTExiYodpfZ'
+  );
+  let feePayerAddress = feePayerKey.toPublicKey();
+  let response = await fetchAccount({ publicKey: feePayerAddress });
+  if (response.error) throw Error(response.error.statusText);
+
+  let zkappKey = PrivateKey.fromBase58(
+    'EKF2MeBkdwXHp8XAuiUTmWd6FsmtRSLu15zM2bY1xW9s6tKejLmy'
+  );
+  let zkappAddress = zkappKey.toPublicKey();
+
+  let transactionFee = 100_000_000;
+
+  const zkApp = new RollupContract(zkappAddress);
+ */
+
+  // TODO: remove this
+  /* const utxo = UTXO.create(
+    PublicKey.fromBase58(
+      'B62qmKjaQZTZa2yyDPt3tizyMRx4TySoNPagK1qcCQCMAWpHLi2TXrF'
+    ),
+    Field(1),
+    Field(1)
+  );
+  const map = new MerkleMap();
+  const nullifierRoot = map.getRoot();
+  map.set(utxo.hash(), utxo.hash());
+  const commitmentRoot = map.getRoot();
+  console.log(commitmentRoot.toString());
+  console.log(nullifierRoot.toString());
+
+  console.log(`Deploying zkapp for public key ${zkappAddress.toBase58()}.`);
+  // the `transaction()` interface is the same as when testing with a local blockchain
+  let transaction = await Mina.transaction(
+    { sender: feePayerAddress, fee: transactionFee },
+    () => {
+      AccountUpdate.fundNewAccount(feePayerAddress);
+      zkApp.deploy({ verificationKey: contractKey });
+    }
+  );
+  transaction.prove();
+  
+  console.log('Sending the transaction...');
+  const res = await transaction.sign([feePayerKey, zkappKey]).send();
+
+  res.wait();
+ */
+  /* let transaction = await Mina.transaction(
+    { sender: feePayerAddress, fee: transactionFee },
+    () => {
+      zkApp.initStateRoot(commitmentRoot, nullifierRoot);
+    }
+  );
+  transaction.prove();
+  
+  console.log('Sending the transaction...');
+  await transaction.sign([feePayerKey, zkappKey]).send(); */
+
+  console.log('Snarkyjs compiled');
   return verificationKey;
 };
 
@@ -359,7 +427,7 @@ export const generateProofsParellel = async (stepInfos: any[]) => {
       stepInfo.initialNullifierWitnesses,
       stepInfo.latestNullifierWitnesses
     );
-    console.log('PROOF', proof);
+
     rollupProofs.push(proof);
   }
 
@@ -378,6 +446,42 @@ export const mergeProofs = async (proofs: Proof<RollupState, Empty>[]) => {
   }
   return proof;
 };
+
+export const callContract = async (
+  proof: Proof<RollupState, Empty>
+) => {
+  const network =  Mina.Network('https://proxy.berkeley.minaexplorer.com/graphql');
+
+  let fee = 100_000_000;
+
+  Mina.setActiveInstance(network);
+
+  let feePayerKey = PrivateKey.fromBase58(
+    'EKDzfV1F4KGgrVdqUujb5XAxakZnE9Ypo1UfxU8GjVTExiYodpfZ'
+  );
+  let feePayerAddress = feePayerKey.toPublicKey();
+  let zkappKey = PrivateKey.fromBase58(
+    'EKF2MeBkdwXHp8XAuiUTmWd6FsmtRSLu15zM2bY1xW9s6tKejLmy'
+  );
+  let zkappAddress = zkappKey.toPublicKey();
+  
+  const zkApp = new RollupContract(zkappAddress);
+
+  try {
+    const tx = await Mina.transaction({ sender: feePayerAddress, fee}, () => {
+      zkApp.update(proof);
+    });
+    await tx.prove();
+    const sentTx = await tx.sign([feePayerKey]).send();
+
+    return sentTx?.hash();
+  } catch (error) {
+    console.log(error);
+  }
+
+  return null;
+}
+
 
 async function main() {
   console.log('compiling...');

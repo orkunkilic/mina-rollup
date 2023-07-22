@@ -53,8 +53,10 @@
   },
   "dependencies": {
     "better-queue": "^3.8.12",
+    "bullmq": "^4.6.0",
     "child_process": "^1.0.2",
     "fastify": "^4.20.0",
+    "fastify-queue": "^1.2.7",
     "node-fetch": "^2.6.6",
     "queue": "^6.0.0"
   }
