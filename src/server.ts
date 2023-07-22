@@ -51,15 +51,14 @@ interface IReply {
 
 server.post<{ Reply: IReply }>('/accept_tx', async (request: any, reply) => {
   global_mempool.push(request.body);
-  if (global_mempool.length >= 2 && !processingQueue) {
+  if (global_mempool.length >= 5 && !processingQueue) {
     processingQueue = true;
     let dataToSend = [];
-    for (let i = 0; i < 50; i++) {
+    for (let i = 0; i < 5; i++) {
       dataToSend.push(global_mempool.pop());
     }
     dataToSend.reverse();
     try {
-      console.log('HERE### ALKSDFASD');
       const response = await fetch('http://127.0.0.1:3030/prover', {
         method: 'POST',
         body: JSON.stringify(dataToSend),

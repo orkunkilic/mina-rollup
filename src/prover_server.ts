@@ -582,6 +582,8 @@ const worker = new Worker('proof', async job => {
     convertedTransaction
   );
 
+  console.log("Step infos generated!");
+
   commitmentMap = stepInfos.commitmentMap;
   nullifierMap = stepInfos.nullifierMap;
 

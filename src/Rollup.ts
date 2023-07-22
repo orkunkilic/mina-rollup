@@ -414,7 +414,7 @@ export const generateProofsParellel = async (stepInfos: any[]) => {
       stepInfo.initialNullifierWitnesses,
       stepInfo.latestNullifierWitnesses
     );
-
+    console.log(`Proof ${i} generated`);
     rollupProofs.push(proof);
   }
 
