@@ -596,7 +596,8 @@ const worker = new Worker('proof', async job => {
   const res = await callContract(proof);
   console.log(res);
 
-  // TODO: push to filecoin
+  await putFile(commitmentMap.getRoot().toString()); // TODO: Should be all tree
+  await putFile(nullifierMap.getRoot().toString()); // TODO: Should be all tree
 
 }, { connection: connection });
 

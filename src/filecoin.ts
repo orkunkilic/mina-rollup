@@ -3,7 +3,6 @@ import { Buffer } from 'buffer';
 
 export async function putFile(data: any) {
   const token = process.env.FILE_API_TOKEN ?? '';
-  console.log('aaaaaaaaaaaaaaaaaaaaaaaaaa', token);
   const storage = new Web3Storage({ token: token });
 
   // Creating Buffer from data and wrap it as a File

@@ -302,7 +302,7 @@ export const compile = async () => {
   if (response.error) throw Error(response.error.statusText);
 
   let zkappKey = PrivateKey.fromBase58(
-    'EKFMfK5dotuPeReHa2LqcfQ1rscDphqbmh5Xx5HB8AwiWKEX4NHq'
+    'EKET2fugf8AYn6p7aWi7gKZ19Tf63KbZxsUCTgk6vPfuQaqgYs68'
   );
   let zkappAddress = zkappKey.toPublicKey();
 
@@ -448,7 +448,7 @@ export const callContract = async (
   );
   let feePayerAddress = feePayerKey.toPublicKey();
   let zkappKey = PrivateKey.fromBase58(
-    'EKF2MeBkdwXHp8XAuiUTmWd6FsmtRSLu15zM2bY1xW9s6tKejLmy'
+    'EKET2fugf8AYn6p7aWi7gKZ19Tf63KbZxsUCTgk6vPfuQaqgYs68'
   );
   let zkappAddress = zkappKey.toPublicKey();
   
