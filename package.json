@@ -14,6 +14,7 @@
   "main": "build/src/index.js",
   "types": "build/src/index.d.ts",
   "scripts": {
+    "server": "node ./build/src/server.js",
     "build": "tsc",
     "buildw": "tsc --watch",
     "coverage": "node --experimental-vm-modules --experimental-wasm-threads node_modules/jest/bin/jest.js --coverage",
@@ -42,12 +43,19 @@
     "lint-staged": "^11.0.1",
     "prettier": "^2.3.2",
     "ts-jest": "^27.0.7",
-    "typescript": "^4.7.2"
+    "typescript": "^4.7.2",
+    "@types/better-queue": "^3.8.3",
+    "@types/node": "^20.4.3",
+    "@types/node-fetch": "^2.6.4"
   },
   "peerDependencies": {
     "snarkyjs": "0.12.*"
   },
   "dependencies": {
-    "child_process": "^1.0.2"
+    "child_process": "^1.0.2",
+    "better-queue": "^3.8.12",
+    "fastify": "^4.20.0",
+    "node-fetch": "^2.6.6",
+    "queue": "^6.0.0"
   }
 }

@@ -53,7 +53,7 @@ proverForks.forEach((fork, i) => {
   });
 });
 
-class UTXO extends Struct({
+export class UTXO extends Struct({
   publicKey: PublicKey,
   amount: Field,
   salt: Field,
@@ -306,7 +306,7 @@ export class RollupContract extends SmartContract {
   }
 }
 
-interface Transaction {
+export interface Transaction {
   inputUTXOs: UTXO[];
   outputUTXOs: UTXO[];
   signatures: Signature[];
