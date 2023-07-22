@@ -33,7 +33,10 @@
   "devDependencies": {
     "@babel/preset-env": "^7.16.4",
     "@babel/preset-typescript": "^7.16.0",
+    "@types/better-queue": "^3.8.3",
     "@types/jest": "^27.0.3",
+    "@types/node": "^20.4.3",
+    "@types/node-fetch": "^2.6.4",
     "@typescript-eslint/eslint-plugin": "^5.5.0",
     "@typescript-eslint/parser": "^5.5.0",
     "eslint": "^8.7.0",
@@ -43,17 +46,14 @@
     "lint-staged": "^11.0.1",
     "prettier": "^2.3.2",
     "ts-jest": "^27.0.7",
-    "typescript": "^4.7.2",
-    "@types/better-queue": "^3.8.3",
-    "@types/node": "^20.4.3",
-    "@types/node-fetch": "^2.6.4"
+    "typescript": "^4.7.2"
   },
   "peerDependencies": {
-    "snarkyjs": "0.12.*"
+    "snarkyjs": "^0.12.1"
   },
   "dependencies": {
-    "child_process": "^1.0.2",
     "better-queue": "^3.8.12",
+    "child_process": "^1.0.2",
     "fastify": "^4.20.0",
     "node-fetch": "^2.6.6",
     "queue": "^6.0.0"

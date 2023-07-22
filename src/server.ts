@@ -6,6 +6,7 @@ import Queue from 'queue'
 const server = fastify()
 
 import { spawn } from 'child_process';
+import { Field, PrivateKey, Signature } from 'snarkyjs';
 
 // Start the server script in a separate process
 const serverProcess = spawn('node', ['./build/src/prover_server.js']);
@@ -49,26 +50,33 @@ interface IReply {
 
 server.post<{ Reply: IReply }>('/accept_tx', async (request: any, reply) => {
     global_mempool.push(request.body);
-    console.log(global_mempool.length, request.body);
-    if (global_mempool.length >= 3 && !processingQueue) {
+    // console.log(global_mempool.length, request.body);
+    console.log("ANAN");
+    if (global_mempool.length >= 2 && !processingQueue) {
         processingQueue = true;
         let dataToSend = [];
-        for (let i = 0; i < 3; i++) {
+        console.log("HERE");
+        for (let i = 0; i < 2; i++) {
             dataToSend.push(global_mempool.pop());
         }
+        console.log("HERE###");
         dataToSend.reverse();
         try {
+            console.log("HERE### ALKSDFASD");
             const response = await fetch('http://127.0.0.1:3030/prover', {
                 method: 'POST',
                 body: JSON.stringify(dataToSend),
                 headers: { 'Content-Type': 'application/json' },
             });
+            console.log("HERE### ALKSDFASDliahsdifuhasd");
             const json = await response.json();
+            console.log("HERE### ALKSDFASDliahsdifuhasd21342134");
             console.log(json);
             global_mempool = new Queue({ results: [] }); // Clear the queue
         } catch (error) {
             console.log(error);
         } finally {
+            console.log("nbcxzvmbvmzx")
             processingQueue = false;
         }
 
@@ -79,6 +87,8 @@ server.post<{ Reply: IReply }>('/accept_tx', async (request: any, reply) => {
 })
 
 server.listen({ port: 8080 }, (err, address) => {
+    // const pk = PrivateKey.random();
+    // console.log(Signature.create(pk, [Field(1)]).toBase58());
     if (err) {
         console.error(err)
         process.exit(1)

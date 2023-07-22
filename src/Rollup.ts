@@ -35,8 +35,8 @@ class MerkleWitness20 extends MerkleWitness(20) {}
 const K = 1;
 
 // create 30 prover.js fork
-const proverForks = Array.from({ length: 30 }, () =>
-  child_proc.fork('./src/prover.js')
+const proverForks = Array.from({ length: 2 }, () =>
+  child_proc.fork('./build/src/Prover.js')
 );
 
 const lastMessages: any = {};
@@ -536,4 +536,4 @@ async function main() {
   console.log('ok', ok);
 }
 
-main();
+// main();
