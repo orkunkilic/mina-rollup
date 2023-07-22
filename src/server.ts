@@ -10,7 +10,6 @@ import dotenv from 'dotenv';
 const server = fastify();
 
 import { spawn } from 'child_process';
-import { Field, PrivateKey, Signature } from 'snarkyjs';
 
 // Start the server script in a separate process
 const serverProcess = spawn('node', ['./build/src/prover_server.js']);
@@ -52,16 +51,12 @@ interface IReply {
 
 server.post<{ Reply: IReply }>('/accept_tx', async (request: any, reply) => {
   global_mempool.push(request.body);
-  // console.log(global_mempool.length, request.body);
-  console.log('ANAN');
   if (global_mempool.length >= 2 && !processingQueue) {
     processingQueue = true;
     let dataToSend = [];
-    console.log('HERE');
-    for (let i = 0; i < 2; i++) {
+    for (let i = 0; i < 50; i++) {
       dataToSend.push(global_mempool.pop());
     }
-    console.log('HERE###');
     dataToSend.reverse();
     try {
       console.log('HERE### ALKSDFASD');
@@ -70,35 +65,23 @@ server.post<{ Reply: IReply }>('/accept_tx', async (request: any, reply) => {
         body: JSON.stringify(dataToSend),
         headers: { 'Content-Type': 'application/json' },
       });
-      console.log('HERE### ALKSDFASDliahsdifuhasd');
       const json = await response.json();
-      console.log('HERE### ALKSDFASDliahsdifuhasd21342134');
       console.log(json);
       global_mempool = new Queue({ results: [] }); // Clear the queue
     } catch (error) {
       console.log(error);
     } finally {
-      console.log('nbcxzvmbvmzx');
       processingQueue = false;
     }
 
-    return reply.status(302).send({ url: '/prover' });
+    return reply.status(200).send({ success: true });
   }
 
   reply.status(200).send({ success: true });
 });
 
 server.listen({ port: 8080 }, (err, address) => {
-  // const pk = PrivateKey.random();
-  // console.log(Signature.create(pk, [Field(1)]).toBase58());
-
   dotenv.config();
-
-  // const hmm = putFile("hello world 31");
-  // console.log(hmm)
-
-  // const hmm2 = getFile("bafybeiezl52eo4yqnq6zhz6bknc5re3kto5fghcwjskrorhijakq4fx5ju")
-  // console.log(hmm2)
 
   if (err) {
     console.error(err);

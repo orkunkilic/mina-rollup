@@ -252,7 +252,7 @@ export class RollupContract extends SmartContract {
       ...Permissions.default(),
       editState: Permissions.proofOrSignature(),
     });
-    this.commitmentRoot.set(Field("13025293539811535620196147717161170858117988565510092981709432406338931357935"));
+    this.commitmentRoot.set(Field("6969769847290549547742814615029585224698427309083000473751711955836747288932"));
     this.nullifierRoot.set(Field("22731122946631793544306773678309960639073656601863129978322145324846701682624"));
   }
 
@@ -289,7 +289,8 @@ export const compile = async () => {
   const { verificationKey } = await Rollup.compile();
   const { verificationKey: contractKey } = await RollupContract.compile();
 
-  /* let Berkeley = Mina.Network('https://proxy.berkeley.minaexplorer.com/graphql');
+  /* 
+  let Berkeley = Mina.Network('https://proxy.berkeley.minaexplorer.com/graphql');
   Mina.setActiveInstance(Berkeley);
 
   // to use this test, change this private key to an account which has enough MINA to pay fees
@@ -301,29 +302,13 @@ export const compile = async () => {
   if (response.error) throw Error(response.error.statusText);
 
   let zkappKey = PrivateKey.fromBase58(
-    'EKF2MeBkdwXHp8XAuiUTmWd6FsmtRSLu15zM2bY1xW9s6tKejLmy'
+    'EKFMfK5dotuPeReHa2LqcfQ1rscDphqbmh5Xx5HB8AwiWKEX4NHq'
   );
   let zkappAddress = zkappKey.toPublicKey();
 
   let transactionFee = 100_000_000;
 
   const zkApp = new RollupContract(zkappAddress);
- */
-
-  // TODO: remove this
-  /* const utxo = UTXO.create(
-    PublicKey.fromBase58(
-      'B62qmKjaQZTZa2yyDPt3tizyMRx4TySoNPagK1qcCQCMAWpHLi2TXrF'
-    ),
-    Field(1),
-    Field(1)
-  );
-  const map = new MerkleMap();
-  const nullifierRoot = map.getRoot();
-  map.set(utxo.hash(), utxo.hash());
-  const commitmentRoot = map.getRoot();
-  console.log(commitmentRoot.toString());
-  console.log(nullifierRoot.toString());
 
   console.log(`Deploying zkapp for public key ${zkappAddress.toBase58()}.`);
   // the `transaction()` interface is the same as when testing with a local blockchain
@@ -339,8 +324,8 @@ export const compile = async () => {
   console.log('Sending the transaction...');
   const res = await transaction.sign([feePayerKey, zkappKey]).send();
 
-  res.wait();
- */
+  res.wait(); */
+
   /* let transaction = await Mina.transaction(
     { sender: feePayerAddress, fee: transactionFee },
     () => {
@@ -394,6 +379,8 @@ export const createStepInfos = (
       inputWitnesses,
       initialNullifierWitnesses,
       latestNullifierWitnesses,
+      commitmentMap,
+      nullifierMap,
     };
   });
 };
