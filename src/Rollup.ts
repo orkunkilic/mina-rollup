@@ -28,10 +28,28 @@ import {
   Signature,
   Provable,
 } from 'snarkyjs';
+import child_proc from 'child_process';
 
 class MerkleWitness20 extends MerkleWitness(20) {}
 
 const K = 1;
+
+// create 30 prover.js fork
+const proverForks = Array.from({length: 30}, () => child_proc.fork('./src/prover.js'));
+
+const lastMessages: any = {};
+
+// set up message handler for each fork
+proverForks.forEach((fork, i) => {
+  fork.on('message', async (message: any) => {
+    if (message.type === 'step') {
+      lastMessages[i] = {
+        id: message.id,
+        proof: Proof.fromJSON(message.proof)
+      }
+    }
+  });
+});
 
 class UTXO extends Struct({
   publicKey: PublicKey,
@@ -57,7 +75,7 @@ class UTXO extends Struct({
 }
 
 
-class RollupState extends Struct({
+export class RollupState extends Struct({
   initialCommitmentRoot: Field,
   latestCommitmentRoot: Field,
   initialNullifierRoot: Field,
@@ -139,7 +157,7 @@ class RollupState extends Struct({
 
 // ===============================================================
 
-const Rollup = Experimental.ZkProgram({
+export const Rollup = Experimental.ZkProgram({
   publicInput: RollupState,
   publicOutput: Empty,
 
@@ -261,6 +279,70 @@ class RollupContract extends SmartContract {
   }
 }
 
+interface Transaction {
+  inputUTXOs: UTXO[];
+  outputUTXOs: UTXO[];
+  signatures: Signature[];
+}
+
+export const compile = async () => {
+  const { verificationKey } = await Rollup.compile();
+
+  return verificationKey;
+}
+
+export const createStepInfos = (commitmentMap: MerkleMap, nullifierMap: MerkleMap, transactions: Transaction[]) => {
+  return transactions.map(({ inputUTXOs, outputUTXOs, signatures }) => {
+    const inputWitnesses = inputUTXOs.map(utxo => commitmentMap.getWitness(utxo.hash()));
+    const initialNullifierWitnesses = inputUTXOs.map(utxo => nullifierMap.getWitness(utxo.hash()));
+    
+    const initialCommitmentRoot = commitmentMap.getRoot();
+    const initialNullifierRoot = nullifierMap.getRoot();
+
+    for (let inputUTXO of inputUTXOs) {
+      nullifierMap.set(inputUTXO.hash(), inputUTXO.hash());
+    }
+    const latestNullifierWitnesses = inputUTXOs.map(utxo => nullifierMap.getWitness(utxo.hash()));
+
+
+    for (let outputUTXO of outputUTXOs) {
+      commitmentMap.set(outputUTXO.hash(), outputUTXO.hash());
+    }
+    
+
+    return {
+      initialCommitmentRoot,
+      latestCommitmentRoot: commitmentMap.getRoot(),
+      initialNullifierRoot,
+      latestNullifierRoot: nullifierMap.getRoot(),
+      inputUTXOs,
+      outputUTXOs,
+      signatures,
+      inputWitnesses,
+      initialNullifierWitnesses,
+      latestNullifierWitnesses,
+    };
+  });
+}
+
+export const generateProofsParellel = async (stepInfos: any[]) => {
+  const id = Math.random().toString();
+  proverForks.forEach((fork, i) => {
+    fork.send({ type: 'step', stepInfo: stepInfos[i], id });
+  });
+
+  // wait for all prover forks to finish
+  while (true) {
+    // check if all objects in lastMessages have the same id
+    const allSame = Object.values(lastMessages).every((message: any) => message.id === id);
+    if (allSame) {
+      break;
+    } else {
+      // sleep a sec
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+  }
+};
 
 async function main() {
     console.log('compiling...');
@@ -348,11 +430,7 @@ async function main() {
     //   return proof;
     // });
     const rollupProofs: Proof<RollupState, Empty>[] = [];
-    // for (let { initialRoot, latestRoot, key, currentValue, increment, witness } of rollupStepInfo) {
-    //   const rollup = RollupState.createOneStep(initialRoot, latestRoot, key, currentValue, increment, witness);
-    //   const proof = await Rollup.oneStep(rollup, initialRoot, latestRoot, key, currentValue, increment, witness);
-    //   rollupProofs.push(proof);
-    // }
+
     for (let i=0; i<rollupStepInfo.length; i++) {
       const { initialCommitmentRoot, latestCommitmentRoot, initialNullifierRoot, latestNullifierRoot, inputUTXOs, outputUTXOs, signatures, inputWitnesses, initialNullifierWitnesses, latestNullifierWitnesses } = rollupStepInfo[i];
       const rollup = RollupState.createOneStep(

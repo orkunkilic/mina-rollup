@@ -46,7 +46,8 @@
   },
   "peerDependencies": {
     "snarkyjs": "0.12.*"
+  },
+  "dependencies": {
+    "child_process": "^1.0.2"
   }
 }
-
-
