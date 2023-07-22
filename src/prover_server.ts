@@ -13,6 +13,7 @@ import {
   compile,
   createStepInfos,
   generateProofsParellel,
+  mergeProofs,
 } from './Rollup.js';
 
 const server = fastify();
@@ -91,10 +92,10 @@ server.post(
     );
     const proofs = await generateProofsParellel(theBigObjects);
 
-    // TODO: mergeProofs() ->
+    const proof = await mergeProofs(proofs);
 
     // Until here: Move to worker
-    return reply.code(200).send({ success: true });
+    return reply.code(200).send({ success: true, proof: proof.toJSON() });
   }
 );
 

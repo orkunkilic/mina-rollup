@@ -366,6 +366,19 @@ export const generateProofsParellel = async (stepInfos: any[]) => {
   return rollupProofs;
 };
 
+export const mergeProofs = async (proofs: Proof<RollupState, Empty>[]) => {
+  let proof: Proof<RollupState, Empty> = proofs[0];
+  for (let i = 1; i < proofs.length; i++) {
+    const rollup = RollupState.createMerged(
+      proof.publicInput,
+      proofs[i].publicInput
+    );
+    let mergedProof = await Rollup.merge(rollup, proof, proofs[i]);
+    proof = mergedProof;
+  }
+  return proof;
+};
+
 async function main() {
   console.log('compiling...');
 
