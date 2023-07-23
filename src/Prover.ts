@@ -1,4 +1,4 @@
-import { Rollup, RollupState } from "./Rollup"
+import { Rollup, RollupState } from "./Rollup.js"
 
 const stepProof = async (stepInfo: any) => {
     const rollup = RollupState.createOneStep(
@@ -48,7 +48,7 @@ wakeUp();
 process.on('message', async (message: any) => {
     if (message.type === 'step') {
         const proof = await stepProof(message);
-        process.send?({ type: 'step', proof: proof.toJSON(), id: message.id }): null;
+        process.send ? ({ type: 'step', proof: proof.toJSON(), id: message.id }) : null;
     } else if (message.type === 'merge') {
         //
     }
