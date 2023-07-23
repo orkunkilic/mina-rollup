@@ -288,9 +288,8 @@ export interface Transaction {
 export const compile = async () => {
   const { verificationKey } = await Rollup.compile();
   const { verificationKey: contractKey } = await RollupContract.compile();
-
-  /* 
-  let Berkeley = Mina.Network('https://proxy.berkeley.minaexplorer.com/graphql');
+ 
+  /* let Berkeley = Mina.Network('https://proxy.berkeley.minaexplorer.com/graphql');
   Mina.setActiveInstance(Berkeley);
 
   // to use this test, change this private key to an account which has enough MINA to pay fees
@@ -302,7 +301,7 @@ export const compile = async () => {
   if (response.error) throw Error(response.error.statusText);
 
   let zkappKey = PrivateKey.fromBase58(
-    'EKET2fugf8AYn6p7aWi7gKZ19Tf63KbZxsUCTgk6vPfuQaqgYs68'
+    'EKEQLcvBZWHieEuUbNapYzej9WZjApJQ8TY35KyyDpgz1YhooVbT'
   );
   let zkappAddress = zkappKey.toPublicKey();
 
@@ -448,7 +447,7 @@ export const callContract = async (
   );
   let feePayerAddress = feePayerKey.toPublicKey();
   let zkappKey = PrivateKey.fromBase58(
-    'EKET2fugf8AYn6p7aWi7gKZ19Tf63KbZxsUCTgk6vPfuQaqgYs68'
+    'EKEQLcvBZWHieEuUbNapYzej9WZjApJQ8TY35KyyDpgz1YhooVbT'
   );
   let zkappAddress = zkappKey.toPublicKey();
   

@@ -551,6 +551,12 @@ console.log("Commitment map generated!");
 const worker = new Worker('proof', async job => {
   const transactions = job.data.transactions;
 
+  try {
+    await putFile(transactions);
+  } catch (e) {
+    console.log("Skip sending transactions to Filecoin");
+  }
+
   // json to snarkyjs types
   const convertedTransaction: Transaction[] = transactions.map((tx: any) => {
     const input_utxos: UTXO[] = tx.input_utxos.map((utxo: any) =>
